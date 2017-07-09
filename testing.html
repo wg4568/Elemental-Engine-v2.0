@@ -1,0 +1,94 @@
+<title>Tiled Demo</title>
+
+<script src="elemental.js"></script>
+<script src="levels.js"></script>
+
+<canvas id="canvas" width="1000" height="700"></canvas>
+
+<script>
+
+// Define a sprite for the tank, with a body and barrel
+var tankSprite = new Elemental.Sprite({
+	body: new Elemental.Shape.Arc(50, data={
+		lineWidth: 10,
+		layer: 1,
+		fillColor: "#df3cbb"
+	}),
+	barrel: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(0, 50),
+		new Elemental.Vector(80, 50),
+		new Elemental.Vector(80, 0)
+	], data={
+		center: new Elemental.Vector(0, 25),
+		lineWidth: 10
+	})
+});
+
+// Define a canvas object from the HTML canvas above
+var canvas = new Elemental.Canvas("canvas", fullscreen=true);
+
+// Define a tiled viewport, with a function to draw tiles at given points
+var viewport = new Elemental.Viewport.Tiled(canvas, LEVEL_TEST);
+
+// Define variables for tank position, camera speed, and tank speed
+var tankPos = Elemental.Vector.Empty;
+var moveSpeed = 5;
+
+// Begin the canvas clock with passed function
+canvas.start(function(){
+	// Calculate angle between tank position (on the canvas), and the mouse position
+	mouseAngle = Elemental.Helpers.AngleBetween(canvas.mousePos, viewport.translatePoint(tankPos));
+
+	// Set tank sprite rotation to previously calculated angle
+	tankSprite.rotation = mouseAngle;
+
+	// Get inputs from WASD and ARROWS and store them in two vectors
+	var WASD_input = Elemental.Vector.Empty;
+	var ARROWS_input = Elemental.Vector.Empty;
+
+	if (canvas.keyHeld(Elemental.Keycodes.W)) WASD_input.y -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.S)) WASD_input.y += moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.A)) WASD_input.x -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.D)) WASD_input.x += moveSpeed;
+
+	if (canvas.keyHeld(Elemental.Keycodes.UP)) ARROWS_input.y -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.DOWN)) ARROWS_input.y += moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.LEFT)) ARROWS_input.x -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.RIGHT)) ARROWS_input.x += moveSpeed;
+
+	// If shift is held, apply movements only to camera, else apply to tank AND camera
+	if (canvas.keyHeld(Elemental.Keycodes.SHIFT)) {
+		viewport.position = Elemental.Vector.Add(viewport.position, WASD_input);
+	} else {
+		viewport.position = Elemental.Vector.Add(viewport.position, WASD_input);
+		tankPos = Elemental.Vector.Add(tankPos, WASD_input);
+	}
+
+	// If CTRL is pressed, reset camera position to tank position
+	if (canvas.keyDown(Elemental.Keycodes.CTRL)) {
+		viewport.position = tankPos;
+	}
+
+	// Fill solid background
+	viewport.drawFill("#b3faff");
+
+	// Draw all required tiles to fill canvas
+	viewport.drawTiles();
+
+	// Draw tank sprite at tank position
+	viewport.drawSprite(tankSprite, tankPos);
+
+	// Draw some debug text, and a crosshair
+	canvas.drawText("20px Arial", `${viewport.x}, ${viewport.y}`, {x:10,y:25});
+	canvas.drawLine(
+		{x: canvas.width/2, y: (canvas.height/2)-5},
+		{x: canvas.width/2, y: (canvas.height/2)+5}
+	)
+	canvas.drawLine(
+		{x: (canvas.width/2)-5, y: canvas.height/2},
+		{x: (canvas.width/2)+5, y: canvas.height/2}
+	)
+});
+
+</script>
