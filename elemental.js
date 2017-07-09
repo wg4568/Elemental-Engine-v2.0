@@ -755,7 +755,7 @@ Elemental.Keycodes = {
 	GRAVE: 192,
 	OBRACKET: 219,
 	BSLASH: 220,
-	CBRAKET: 221,
+	CBRACKET: 221,
 	QUOTE: 222
 }
 
