@@ -1,0 +1,16 @@
+<title>Networking Test</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+<script src="elemental.js"></script>
+
+<canvas id="canvas" width="500" height="500"></canvas>
+
+<script>
+	var network = new Elemental.Network("http://localhost:5000/")
+	var canvas = new Elemental.Canvas("canvas", network=network);
+	var viewport = new Elemental.Viewport(canvas);
+
+	canvas.start(function() {
+		viewport.drawFill("#b0ff90");
+	});
+</script>

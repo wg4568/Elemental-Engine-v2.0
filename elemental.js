@@ -1,6 +1,378 @@
 // Elememtal object acts as a container for engine
 var Elemental = {};
 
+// Network class for handling network events
+Elemental.Network = class {
+	constructor(server) {
+		this.server = server;
+		this.socket = null;
+
+		this.state = {};
+
+		this.publicID = null;
+		this.privateID = null;
+	}
+
+	send(message) {
+		message.id = this.privateID;
+		var jsonMessage = JSON.stringify(message);
+		this.socket.send(jsonMessage);
+	}
+
+	onMessage(message) {
+		// console.log("RECIEVED", message);
+		if (message.status == "connect") {
+			this.publicID = message.public;
+			this.privateID = message.private;
+		}
+		if (message.status == "update") {
+			this.state = message.state;
+		}
+	}
+
+	// Event handlers (automatically called by canvas)
+	keyDownEvent(keycode) {
+		this.send({
+			kind: "keydown",
+			keycode: keycode
+		});
+	}
+
+	keyUpEvent(keycode) {
+		this.send({
+			kind: "keyup",
+			keycode: keycode
+		});
+	}
+
+	mouseDownEvent(btn) {
+		this.send({
+			kind: "mousedown",
+			button: btn
+		});
+	}
+
+	mouseUpEvent(btn) {
+		this.send({
+			kind: "mouseup",
+			button: btn
+		});
+	}
+
+	mouseMoveEvent(posn) {
+		this.send({
+			kind: "mousemove",
+			position: {
+				x: posn.x,
+				y: posn.y
+			}
+		});
+	}
+
+	// Connect to server (called by canvas.start)
+	connect() {
+		this.socket = io.connect(this.server);
+
+		var parent = this;
+
+		// this.socket.on("disconnect", function() {
+		// 	parent.send({"kind": "disconnect"})
+		// });
+
+		this.socket.on("message", function(msg) {
+			parent.onMessage(JSON.parse(msg));
+		});
+	}
+}
+
+// Basic canvas class, manages all interaction with the canvas element
+Elemental.Canvas = class {
+	constructor(id, network=null, fullscreen=false) {
+		this._canvas = document.getElementById(id);
+		this._context = this._canvas.getContext("2d");
+		this._mousePos = Elemental.Vector.Empty;
+
+		this._fullscreen = fullscreen;
+
+		this.network = network;
+
+		this.keyState = {};
+		this.keyStateDown = {};
+		this.keyStateUp = {};
+
+		this.mouseState = {};
+		this.mouseStateDown = {};
+		this.mouseStateUp = {};
+	}
+
+	// Getters and setters
+	get canvas() {
+		return this._canvas;
+	}
+
+	get context() {
+		return this._context;
+	}
+
+	get width() {
+		return this.canvas.width;
+	}
+
+	set width(value) {
+		this.canvas.width = value;
+	}
+
+	get height() {
+		return this.canvas.height;
+	}
+
+	set height(value) {
+		this.canvas.height = value;
+	}
+
+	get mousePos() {
+		return this._mousePos;
+	}
+
+	get size() {
+		return {x: this.height, y: this.width};
+	}
+
+	get center() {
+		return {x: this.canvas.width/2, y: this.canvas.height/2};
+	}
+
+	// Event handling methods
+	keyDownEvent(keycode) {
+		this.keyState[keycode] = 1;
+		this.keyStateDown[keycode] = 1;
+		if (this.network) this.network.keyDownEvent(keycode);
+	}
+
+	keyUpEvent(keycode) {
+		this.keyState[keycode] = 0;
+		this.keyStateUp[keycode] = 1;
+		if (this.network) this.network.keyUpEvent(keycode);
+	}
+
+	mouseDownEvent(btn) {
+		this.mouseState[btn] = 1;
+		this.mouseStateDown[btn] = 1;
+		if (this.network) this.network.mouseDownEvent(btn);
+	}
+
+	mouseUpEvent(btn) {
+		this.mouseState[btn] = 0;
+		this.mouseStateUp[btn] = 1;
+		if (this.network) this.network.mouseUpEvent(btn);
+	}
+
+	mouseMoveEvent(event) {
+		this._mousePos = new Elemental.Vector(event.offsetX, event.offsetY);
+		if (this.network) this.network.mouseMoveEvent(this.mousePos);
+	}
+
+	fillWindow() {
+		this.width = window.innerWidth;
+		this.height = window.innerHeight;
+	}
+
+	// State reading methods
+	keyDown(keycode) {
+		var state = this.keyStateDown[keycode];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	keyUp(keycode) {
+		var state = this.keyStateUp[keycode];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	keyHeld(keycode) {
+		var state = this.keyState[keycode];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	mouseDown(btn) {
+		var state = this.mouseStateDown[btn];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	mouseUp(btn) {
+		var state = this.mouseStateUp[btn];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	mouseHeld(btn) {
+		var state = this.mouseState[btn];
+		if (state == 1) return true;
+		else return false;
+	}
+
+	// Initiation function
+	start(func) {
+		var parent = this;
+
+		this.canvas.addEventListener('contextmenu', event => event.preventDefault());
+
+		document.addEventListener("keydown", function(event) {
+			parent.keyDownEvent(event.keyCode);
+		});
+
+		document.addEventListener("keyup", function(event) {
+			parent.keyUpEvent(event.keyCode);
+		});
+
+		this.canvas.addEventListener("mousemove", function(event) {
+			parent.mouseMoveEvent(event);
+		}, false);
+
+		document.addEventListener("mousedown", function(event) {
+			parent.mouseDownEvent(event.button);
+		});
+
+		document.addEventListener("mouseup", function(event) {
+			parent.mouseUpEvent(event.button);
+		});
+
+		if (this.network) {
+			this.network.connect();
+		}
+
+		if (this._fullscreen) {
+			this.fillWindow();
+			document.body.style.margin = 0;
+			window.addEventListener("resize", function(event){
+				parent.fillWindow();
+			});
+		}
+
+		Elemental.Helpers.GameLoopManager.run(function(time) {
+			func(parent, time);
+			parent.keyStateDown = {};
+			parent.keyStateUp = {};
+			parent.mouseStateDown = {};
+			parent.mouseStateUp = {};
+		});
+	}
+
+	stop() {
+		Elemental.Helpers.GameLoopManager.stop();
+	}
+
+	// Draw functions
+	drawFill(color) {
+		this.drawRect(color, Elemental.Vector.Empty, this.width, this.height);
+	}
+
+	drawLine(p1, p2, color="black", width=1, caps="round") {
+		this.context.strokeStyle = color;
+		this.context.lineWidth = width;
+		this.context.lineCap = caps;
+
+		this.context.beginPath();
+		this.context.moveTo(p1.x, p1.y);
+		this.context.lineTo(p2.x, p2.y);
+		this.context.stroke();
+	}
+
+	drawText(font, text, posn, color="black") {
+		this.context.fillStyle = color;
+		this.context.font = font;
+		this.context.fillText(text, posn.x, posn.y);
+	}
+
+	drawRect(color, posn, w, h) {
+		this.context.fillStyle = color;
+		this.context.fillRect(posn.x, posn.y, w, h);
+	}
+
+	drawImage(image, posn) {
+		this.context.drawImage(image, posn.x, posn.y);
+	}
+
+	drawSprite(sprite, posn) {
+		var toDraw = [];
+		var x = posn.x;
+		var y = posn.y;
+		for (var property in sprite.shapes) {
+			if (sprite.shapes.hasOwnProperty(property)) {
+				var element = sprite.shapes[property];
+				toDraw.push(element);
+			}
+		}
+
+		toDraw.sort(function(a, b){
+			if (a.layer > b.layer) return 1;
+			if (a.layer < b.layer) return -1;
+			return 0;
+		});
+
+		for (var elementIndex in toDraw) {
+			var element = toDraw[elementIndex];
+			var scaleFactor = sprite.scale * element.scale;
+
+			this.context.strokeStyle = element.lineColor;
+			this.context.lineWidth = element.lineWidth;
+			this.context.lineCap = element.lineCaps;
+			this.context.lineJoin = element.lineCorners;
+			this.context.miterLimit = element.lineMiterLimit;
+			this.context.setLineDash([element.lineDashWidth, element.lineDashSpacing]);
+			this.context.lineDashOffset = element.lineDashOffset;
+			this.context.fillStyle = element.fillColor;
+
+			this.context.translate(x, y);
+			this.context.rotate(Elemental.Helpers.ToRadians(element.rotation+sprite.rotation));
+
+			this.context.beginPath();
+
+			if (element.type == "poly") {
+				this.context.beginPath();
+				this.context.moveTo(
+					(element.points[0].x-element.center.x)*scaleFactor,
+					(element.points[0].y-element.center.y)*scaleFactor
+				);
+				for (var i=1; i<element.points.length; i++) {
+						this.context.lineTo(
+						(element.points[i].x-element.center.x)*scaleFactor,
+						(element.points[i].y-element.center.y)*scaleFactor
+					);
+				}
+			}
+
+			if (element.type == "arc") {
+				this.context.arc(
+					(element.arc.center.x-element.center.x)*scaleFactor,
+					(element.arc.center.y-element.center.y)*scaleFactor,
+					(element.arc.radius)*scaleFactor,
+					Elemental.Helpers.ToRadians(element.arc.start),
+					Elemental.Helpers.ToRadians(element.arc.end)
+				);
+			}
+
+			if (element.closePath) {
+				this.context.closePath();
+			}
+
+			if (element.strokeFirst) {
+				if (element.lineWidth > 0) { this.context.stroke(); }
+				this.context.fill();
+			} else {
+				this.context.fill();
+				if (element.lineWidth > 0) { this.context.stroke(); }
+			}
+
+			this.context.rotate(-Elemental.Helpers.ToRadians(element.rotation+sprite.rotation));
+			this.context.translate(-x, -y);
+		};
+	}
+}
+
 // Viewport classes, handle cameras and such
 Elemental.Viewport = class {
 	constructor(canvas) {
@@ -127,283 +499,6 @@ Elemental.Viewport.Tiled = class extends Elemental.Viewport {
 				this.drawTile(gridPosn, posn);
 			}
 		}
-		// console.log(startPos);
-	}
-}
-
-// Basic canvas class, manages all interaction with the canvas element
-Elemental.Canvas = class {
-	constructor(id, fullscreen=false) {
-		this._canvas = document.getElementById(id);
-		this._context = this._canvas.getContext("2d");
-		this._mousePos = Elemental.Vector.Empty;
-
-		this._fullscreen = fullscreen;
-
-		this.keyState = {};
-		this.keyStateDown = {};
-		this.keyStateUp = {};
-
-		this.mouseState = {};
-		this.mouseStateDown = {};
-		this.mouseStateUp = {};
-	}
-
-	// Getters and setters
-	get canvas() {
-		return this._canvas;
-	}
-
-	get context() {
-		return this._context;
-	}
-
-	get width() {
-		return this.canvas.width;
-	}
-
-	set width(value) {
-		this.canvas.width = value;
-	}
-
-	get height() {
-		return this.canvas.height;
-	}
-
-	set height(value) {
-		this.canvas.height = value;
-	}
-
-	get mousePos() {
-		return this._mousePos;
-	}
-
-	get size() {
-		return {x: this.height, y: this.width};
-	}
-
-	get center() {
-		return {x: this.canvas.width/2, y: this.canvas.height/2};
-	}
-
-	// Event handling methods
-	keyDownEvent(keycode) {
-		this.keyState[keycode] = 1;
-		this.keyStateDown[keycode] = 1;
-	}
-
-	keyUpEvent(keycode) {
-		this.keyState[keycode] = 0;
-		this.keyStateUp[keycode] = 1;
-	}
-
-	mouseDownEvent(btn) {
-		this.mouseState[btn] = 1;
-		this.mouseStateDown[btn] = 1;
-	}
-
-	mouseUpEvent(btn) {
-		this.mouseState[btn] = 0;
-		this.mouseStateUp[btn] = 1;
-	}
-
-	mouseMoveEvent(event) {
-		this._mousePos = new Elemental.Vector(event.offsetX, event.offsetY);
-	}
-
-	fillWindow() {
-		this.width = window.innerWidth;
-		this.height = window.innerHeight;
-	}
-
-	// State reading methods
-	keyDown(keycode) {
-		var state = this.keyStateDown[keycode];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	keyUp(keycode) {
-		var state = this.keyStateUp[keycode];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	keyHeld(keycode) {
-		var state = this.keyState[keycode];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	mouseDown(btn) {
-		var state = this.mouseStateDown[btn];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	mouseUp(btn) {
-		var state = this.mouseStateUp[btn];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	mouseHeld(btn) {
-		var state = this.mouseState[btn];
-		if (state == 1) return true;
-		else return false;
-	}
-
-	// Initiation function
-	start(func) {
-		var parent = this;
-
-		document.addEventListener("keydown", function(event) {
-			parent.keyDownEvent(event.keyCode);
-		});
-
-		document.addEventListener("keyup", function(event) {
-			parent.keyUpEvent(event.keyCode);
-		});
-
-		this.canvas.addEventListener("mousemove", function(event) {
-			parent.mouseMoveEvent(event);
-		}, false);
-
-		document.addEventListener("mousedown", function(event) {
-			parent.mouseDownEvent(event.button);
-		});
-
-		document.addEventListener("mouseup", function(event) {
-			parent.mouseUpEvent(event.button);
-		});
-
-		if (this._fullscreen) {
-			this.fillWindow();
-			document.body.style.margin = 0;
-			window.addEventListener("resize", function(event){
-				parent.fillWindow();
-			});
-		}
-
-		Elemental.Helpers.GameLoopManager.run(function(time) {
-			func(parent, time);
-			parent.keyStateDown = {};
-			parent.keyStateUp = {};
-			parent.mouseStateDown = {};
-			parent.mouseStateUp = {};
-		});
-	}
-
-	stop() {
-		Elemental.Helpers.GameLoopManager.stop();
-	}
-
-	// Draw functions
-	drawFill(color) {
-		this.drawRect(color, Elemental.Vector.Empty, this.width, this.height);
-	}
-
-	drawLine(p1, p2, color="black", width=1, caps="round") {
-		this.context.strokeStyle = color;
-		this.context.lineWidth = width;
-		this.context.lineCap = caps;
-
-		this.context.beginPath();
-		this.context.moveTo(p1.x, p1.y);
-		this.context.lineTo(p2.x, p2.y);
-		this.context.stroke();
-	}
-
-	drawText(font, text, posn, color="black") {
-		this.context.fillStyle = color;
-		this.context.font = font;
-		this.context.fillText(text, posn.x, posn.y);
-	}
-
-	drawRect(color, posn, w, h) {
-		this.context.fillStyle = color;
-		this.context.fillRect(posn.x, posn.y, w, h);
-	}
-
-	drawImage(image, posn) {
-		this.context.drawImage(image, posn.x, posn.y);
-	}
-
-	drawSprite(sprite, posn) {
-		var toDraw = [];
-		var x = posn.x;
-		var y = posn.y;
-		for (var property in sprite.shapes) {
-			if (sprite.shapes.hasOwnProperty(property)) {
-				var element = sprite.shapes[property];
-				toDraw.push(element);
-			}
-		}
-
-		toDraw.sort(function(a, b){
-			if (a.layer > b.layer) return 1;
-			if (a.layer < b.layer) return -1;
-			return 0;
-		});
-
-		for (var elementIndex in toDraw) {
-			var element = toDraw[elementIndex];
-			var scaleFactor = sprite.scale * element.scale;
-
-			this.context.strokeStyle = element.lineColor;
-			this.context.lineWidth = element.lineWidth;
-			this.context.lineCap = element.lineCaps;
-			this.context.lineJoin = element.lineCorners;
-			this.context.miterLimit = element.lineMiterLimit;
-			this.context.setLineDash([element.lineDashWidth, element.lineDashSpacing]);
-			this.context.lineDashOffset = element.lineDashOffset;
-			this.context.fillStyle = element.fillColor;
-
-			this.context.translate(x, y);
-			this.context.rotate(Elemental.Helpers.ToRadians(element.rotation+sprite.rotation));
-
-			this.context.beginPath();
-
-			if (element.type == "poly") {
-				this.context.beginPath();
-				this.context.moveTo(
-					(element.points[0].x-element.center.x)*scaleFactor,
-					(element.points[0].y-element.center.y)*scaleFactor
-				);
-				for (var i=1; i<element.points.length; i++) {
-					this.context.lineTo(
-						(element.points[i].x-element.center.x)*scaleFactor,
-						(element.points[i].y-element.center.y)*scaleFactor
-					);
-				}
-			}
-
-			if (element.type == "arc") {
-				// console.log(element.arc)
-				this.context.arc(
-					(element.arc.center.x-element.center.x)*scaleFactor,
-					(element.arc.center.y-element.center.y)*scaleFactor,
-					(element.arc.radius)*scaleFactor,
-					Elemental.Helpers.ToRadians(element.arc.start),
-					Elemental.Helpers.ToRadians(element.arc.end)
-				);
-			}
-
-			if (element.closePath) {
-				this.context.closePath();
-			}
-
-			if (element.strokeFirst) {
-				if (element.lineWidth > 0) { this.context.stroke(); }
-				this.context.fill();
-			} else {
-				this.context.fill();
-				if (element.lineWidth > 0) { this.context.stroke(); }
-			}
-
-			this.context.rotate(-Elemental.Helpers.ToRadians(element.rotation+sprite.rotation));
-			this.context.translate(-x, -y);
-		};
 	}
 }
 
