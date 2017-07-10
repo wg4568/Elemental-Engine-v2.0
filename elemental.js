@@ -7,26 +7,34 @@ Elemental.Network = class {
 		this.server = server;
 		this.socket = null;
 
-		this.state = {};
+		this.id = null;
 
-		this.publicID = null;
-		this.privateID = null;
+		this.last_message = 0;
+		this.ping_frequency = 1000;
+
+		this.state = {};
+	}
+
+	frame() {
+		if (Elemental.Helpers.Now() - this.last_message > this.ping_frequency) {
+			this.send({
+				"kind": "imhere"
+			});
+			this.last_message = Elemental.Helpers.Now();
+		}
 	}
 
 	send(message) {
-		message.id = this.privateID;
+		message.id = this.id;
 		var jsonMessage = JSON.stringify(message);
 		this.socket.send(jsonMessage);
 	}
 
 	onMessage(message) {
-		// console.log("RECIEVED", message);
+		console.log("RECIEVED", message);
+
 		if (message.status == "connect") {
-			this.publicID = message.public;
-			this.privateID = message.private;
-		}
-		if (message.status == "update") {
-			this.state = message.state;
+			this.id = message.id;
 		}
 	}
 
@@ -62,10 +70,8 @@ Elemental.Network = class {
 	mouseMoveEvent(posn) {
 		this.send({
 			kind: "mousemove",
-			position: {
-				x: posn.x,
-				y: posn.y
-			}
+			xpos: posn.x,
+			ypos: posn.y
 		});
 	}
 
@@ -74,11 +80,6 @@ Elemental.Network = class {
 		this.socket = io.connect(this.server);
 
 		var parent = this;
-
-		// this.socket.on("disconnect", function() {
-		// 	parent.send({"kind": "disconnect"})
-		// });
-
 		this.socket.on("message", function(msg) {
 			parent.onMessage(JSON.parse(msg));
 		});
@@ -253,6 +254,9 @@ Elemental.Canvas = class {
 		}
 
 		Elemental.Helpers.GameLoopManager.run(function(time) {
+			if (parent.network) {
+				parent.network.frame();
+			}
 			func(parent, time);
 			parent.keyStateDown = {};
 			parent.keyStateUp = {};
@@ -540,6 +544,10 @@ Elemental.Helpers.LoadImage = function(url) {
 	var img = new Image();
     img.src = url;
 	return img;
+}
+
+Elemental.Helpers.Now = function() {
+	return new Date().getTime();
 }
 
 // GameLoopManager By Javier Arevalo
