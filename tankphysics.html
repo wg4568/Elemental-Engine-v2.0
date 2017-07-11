@@ -85,8 +85,8 @@ canvas.start(function(){
 		// Calculate step to move to target position
 		var step = Elemental.Helpers.StepBetween(canvas.mousePos, viewport.translatePoint(tankRigid.posn));
 
-		// Multiply by bullet speed, and invert (to work with our coordinate system)
-		step = Elemental.Vector.Multiply(step, bulletSpeed, -1);
+		// Multiply by bullet speed
+		step = Elemental.Vector.Multiply(step, bulletSpeed);
 
 		// Calculate offset, this is so the bullet spawns at the barrel, not inside the tank body
 		var offset = Elemental.Vector.Multiply(step, 7);
