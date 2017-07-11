@@ -1,0 +1,112 @@
+<script src="elemental.js"></script>
+<title>Tanks With Physics</title>
+
+<canvas id="game"></canvas>
+
+<script>
+
+var canvas = new Elemental.Canvas("game", fullscreen=true);
+var viewport = new Elemental.Viewport(canvas);
+
+var moveSpeed = 0.5;
+var maxSpeed = 5;
+
+var tankSprite = new Elemental.Sprite({
+	body: new Elemental.Shape.Arc(50, data={
+		lineWidth: 10,
+		fillColor: "#c80000",
+		layer: 1
+	}),
+	barrel: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(0, 50),
+		new Elemental.Vector(80, 50),
+		new Elemental.Vector(80, 0)
+	], data={
+		lineWidth: 10,
+		fillColor: "#1f9d00",
+		center: {
+			x: 0,
+			y: 25
+		}
+	})
+});
+
+var bulletSprite = new Elemental.Sprite({
+	bullet: new Elemental.Shape.Arc(10, data={
+		lineWidth: 10,
+		fillColor: "#56d6e0"
+	})
+})
+
+class Bullet {
+	constructor(posn, velocity) {
+		this.posn = posn;
+		this.velocity = velocity;
+	}
+
+	frame() {
+		this.posn = Elemental.Vector.Add(this.posn, this.velocity);
+	}
+}
+
+var bullets = [];
+var bulletSpeed = 15;
+
+var tankRigid = new Elemental.Physics.Rigidbody();
+tankRigid.friction = 0.95;
+
+canvas.start(function(){
+	mouseAngle = Elemental.Helpers.AngleBetween(canvas.mousePos, viewport.translatePoint(tankRigid.posn));
+	tankSprite.rotation = mouseAngle;
+
+	bullets.forEach(function(bullet){
+		bullet.frame();
+	});
+
+	if (canvas.mouseDown(Elemental.Mousecodes.LEFT)) {
+		// Calculate step to move to target position
+		var step = Elemental.Helpers.StepBetween(canvas.mousePos, viewport.translatePoint(tankRigid.posn));
+
+		// Multiply by bullet speed, and invert (to work with our coordinate system)
+		step = Elemental.Vector.Multiply(step, bulletSpeed, -1);
+
+		// Calculate offset, this is so the bullet spawns at the barrel, not inside the tank body
+		var offset = Elemental.Vector.Multiply(step, 7);
+
+		// Add offset to tank position and store in new vector
+		var start = Elemental.Vector.Add(tankRigid.posn, offset);
+
+		// Create a new bullet class with the above calculated parameters
+		var bullet = new Bullet(start, step);
+
+		// Add new bullet to bullets array
+		bullets.push(bullet);
+
+		// Give the tank a slight 'knockback' effect
+		tankRigid.addForce(Elemental.Vector.Multiply(step, -0.05));
+	}
+
+	var movement = Elemental.Vector.Empty;
+	if (canvas.keyHeld(Elemental.Keycodes.W)) movement.y -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.S)) movement.y += moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.A)) movement.x -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.D)) movement.x += moveSpeed;
+
+	if (tankRigid.xvelocity > maxSpeed) tankRigid.xvelocity = maxSpeed;
+	if (tankRigid.xvelocity < -maxSpeed) tankRigid.xvelocity = -maxSpeed;
+	if (tankRigid.yvelocity > maxSpeed) tankRigid.yvelocity = maxSpeed;
+	if (tankRigid.yvelocity < -maxSpeed) tankRigid.yvelocity = -maxSpeed;
+
+	tankRigid.addForce(movement);
+	tankRigid.logic();
+
+	viewport.drawFill("#e4e4e4");
+	viewport.drawSprite(tankSprite, tankRigid.posn);
+
+	bullets.forEach(function(bullet){
+		viewport.drawSprite(bulletSprite, bullet.posn);
+	});
+});
+
+</script>

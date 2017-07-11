@@ -1,0 +1,62 @@
+<title>Elemental.Physics Demo</title>
+
+<script src="elemental.js"></script>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+var canvas = new Elemental.Canvas("canvas", fullscreen=true);
+var viewport = new Elemental.Viewport(canvas);
+
+var speedMultiplier = 0.01;
+
+var myRigidbody = new Elemental.Physics.Rigidbody();
+myRigidbody.friction = 0.95;
+
+var mySprite = new Elemental.Sprite({
+	main: new Elemental.Shape.Arc(50, data={
+		lineWidth: 10,
+		fillColor: "#2dbe33"
+	})
+});
+
+var fx = 0;
+var fy = 0;
+
+canvas.start(function(){
+	myRigidbody.logic();
+
+	viewport.drawFill("#6cb1da");
+	viewport.drawSprite(mySprite, myRigidbody.posn);
+
+	if (canvas.mouseHeld(Elemental.Mousecodes.LEFT)) {
+		var amnt = Elemental.Helpers.DistanceBetween(
+			canvas.mousePos,
+			viewport.translatePoint(myRigidbody.posn)
+		);
+		var step = Elemental.Helpers.StepBetween(
+			canvas.mousePos,
+			viewport.translatePoint(myRigidbody.posn)
+		);
+		var force = Elemental.Vector.Multiply(step, amnt, speedMultiplier, -1)
+		myRigidbody.addForce(force);
+
+		canvas.drawLine(
+			canvas.mousePos,
+			viewport.translatePoint(myRigidbody.posn),
+			color="black",
+			width=10
+		);
+
+		fx = force.x.toFixed(2);
+		fy = force.y.toFixed(2);
+	}
+	var ax = myRigidbody.velocity.x.toFixed(2);
+	var ay = myRigidbody.velocity.y.toFixed(2);
+	canvas.drawText("30px Arial", `CURRENT VELOCITY: ${ax}, ${ay}`, {x: 10, y: 30})
+	canvas.drawText("30px Arial", `APPLIED FORCE: ${fx}, ${fy}`, {x: 10, y: 60})
+
+});
+
+</script>
