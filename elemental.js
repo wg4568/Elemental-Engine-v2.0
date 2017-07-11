@@ -4,19 +4,7 @@ var Elemental = {};
 // Starting to form a basic physics engine, for now just rigidbodies and forces
 Elemental.Physics = {};
 
-Elemental.Physics.Engine = class {
-	constructor(gravity=new Elemental.Vector(0, 1)) {
-		this.gravity = gravity;
-		this.things = [];
-	}
-
-	logic() {
-		this.things.forEach(function(thing){
-			thing.logic();
-		});
-	}
-}
-
+// Rigidbody class
 Elemental.Physics.Rigidbody = class {
 	constructor() {
 		this.posn = Elemental.Vector.Empty;
