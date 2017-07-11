@@ -10,7 +10,6 @@ Elemental.Physics.Rigidbody = class {
 		this.posn = Elemental.Vector.Empty;
 		this.velocity = Elemental.Vector.Empty;
 
-		this.gravity = new Elemental.Vector(0, 0);
 		this.friction = 1;
 
 		this.zero_threshold = 0.001;
@@ -18,7 +17,6 @@ Elemental.Physics.Rigidbody = class {
 
 	logic() {
 		this.velocity = Elemental.Vector.Multiply(this.velocity, this.friction);
-		this.velocity = Elemental.Vector.Add(this.velocity, this.gravity);
 
 		if (this.xvelocity < this.zero_threshold && this.xvelocity > -this.zero_threshold) {
 			this.xvelocity = 0;
@@ -512,90 +510,90 @@ Elemental.Viewport.Tiled = class extends Elemental.Viewport {
 	}
 }
 
-// Network class for handling network events
-Elemental.Network = class {
-	constructor(server) {
-		this.server = server;
-		this.socket = null;
-
-		this.id = null;
-
-		this.last_message = 0;
-		this.ping_frequency = 1000;
-
-		this.state = {};
-	}
-
-	frame() {
-		if (Elemental.Helpers.Now() - this.last_message > this.ping_frequency) {
-			this.send({
-				"kind": "imhere"
-			});
-			this.last_message = Elemental.Helpers.Now();
-		}
-	}
-
-	send(message) {
-		message.id = this.id;
-		var jsonMessage = JSON.stringify(message);
-		this.socket.send(jsonMessage);
-	}
-
-	onMessage(message) {
-		console.log("RECIEVED", message);
-
-		if (message.status == "connect") {
-			this.id = message.id;
-		}
-	}
-
-	// Event handlers (automatically called by canvas)
-	keyDownEvent(keycode) {
-		this.send({
-			kind: "keydown",
-			keycode: keycode
-		});
-	}
-
-	keyUpEvent(keycode) {
-		this.send({
-			kind: "keyup",
-			keycode: keycode
-		});
-	}
-
-	mouseDownEvent(btn) {
-		this.send({
-			kind: "mousedown",
-			button: btn
-		});
-	}
-
-	mouseUpEvent(btn) {
-		this.send({
-			kind: "mouseup",
-			button: btn
-		});
-	}
-
-	mouseMoveEvent(posn) {
-		this.send({
-			kind: "mousemove",
-			xpos: posn.x,
-			ypos: posn.y
-		});
-	}
-
-	// Connect to server (called by canvas.start)
-	connect() {
-		this.socket = io.connect(this.server);
-
-		var parent = this;
-		this.socket.on("message", function(msg) {
-			parent.onMessage(JSON.parse(msg));
-		});
-	}
-}
+// Network class for handling network events (UNUSED)
+// Elemental.Network = class {
+// 	constructor(server) {
+// 		this.server = server;
+// 		this.socket = null;
+//
+// 		this.id = null;
+//
+// 		this.last_message = 0;
+// 		this.ping_frequency = 1;
+//
+// 		this.state = {};
+// 	}
+//
+// 	frame() {
+// 		if (Elemental.Helpers.Now() - this.last_message > this.ping_frequency) {
+// 			this.send({
+// 				"kind": "imhere"
+// 			});
+// 			this.last_message = Elemental.Helpers.Now();
+// 		}
+// 	}
+//
+// 	send(message) {
+// 		message.id = this.id;
+// 		var jsonMessage = JSON.stringify(message);
+// 		this.socket.send(jsonMessage);
+// 	}
+//
+// 	onMessage(message) {
+// 		console.log("RECIEVED", message);
+//
+// 		if (message.status == "connect") {
+// 			this.id = message.id;
+// 		}
+// 	}
+//
+// 	// Event handlers (automatically called by canvas)
+// 	keyDownEvent(keycode) {
+// 		this.send({
+// 			kind: "keydown",
+// 			keycode: keycode
+// 		});
+// 	}
+//
+// 	keyUpEvent(keycode) {
+// 		this.send({
+// 			kind: "keyup",
+// 			keycode: keycode
+// 		});
+// 	}
+//
+// 	mouseDownEvent(btn) {
+// 		this.send({
+// 			kind: "mousedown",
+// 			button: btn
+// 		});
+// 	}
+//
+// 	mouseUpEvent(btn) {
+// 		this.send({
+// 			kind: "mouseup",
+// 			button: btn
+// 		});
+// 	}
+//
+// 	mouseMoveEvent(posn) {
+// 		this.send({
+// 			kind: "mousemove",
+// 			xpos: posn.x,
+// 			ypos: posn.y
+// 		});
+// 	}
+//
+// 	// Connect to server (called by canvas.start)
+// 	connect() {
+// 		this.socket = io.connect(this.server);
+//
+// 		var parent = this;
+// 		this.socket.on("message", function(msg) {
+// 			parent.onMessage(JSON.parse(msg));
+// 		});
+// 	}
+// }
 
 // Helper object filled with helper functions and classes
 Elemental.Helpers = {}
@@ -619,8 +617,8 @@ Elemental.Helpers.DistanceBetween = function(point1, point2) {
 
 Elemental.Helpers.StepBetween = function(point1, point2) {
 	var hype = Elemental.Helpers.DistanceBetween(point1, point2);
-	var dx = -(point1.x-point2.x)/hype;
-	var dy = -(point1.y-point2.y)/hype;
+	var dx = (point1.x-point2.x)/hype;
+	var dy = (point1.y-point2.y)/hype;
 	return new Elemental.Vector(dx, dy);
 }
 
@@ -642,7 +640,7 @@ Elemental.Helpers.LoadImage = function(url) {
 }
 
 Elemental.Helpers.Now = function() {
-	return new Date().getTime();
+	return new Date().getTime() / 1000;
 }
 
 // GameLoopManager By Javier Arevalo
