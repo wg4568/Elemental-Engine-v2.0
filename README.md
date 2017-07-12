@@ -7,6 +7,8 @@ Run some of the demos here:
 [demo_tankcubes.html](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/demo_tankcubes.html)
 [demo_tankshoot.html](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/demo_tankshoot.html)
 
+![](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/resources/diagram.png "Diagram")
+
 # Old Elemental Engine v1.0 Docs
 
 Basic setup is as follows
