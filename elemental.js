@@ -210,7 +210,7 @@ Elemental.Canvas = class {
 
 		this.canvas.addEventListener("mousemove", function(event) {
 			parent.mouseMoveEvent(event);
-		}, false);
+		}			);
 
 		document.addEventListener("mousedown", function(event) {
 			parent.mouseDownEvent(event.button);
@@ -381,6 +381,10 @@ Elemental.Viewport = class {
 		return this.camera;
 	}
 
+	get posn() {
+		return this.camera;
+	}
+
 	set x(value) {
 		this.camera.x = value;
 	}
@@ -390,6 +394,10 @@ Elemental.Viewport = class {
 	}
 
 	set position(value) {
+		this.camera = value;
+	}
+
+	set posn(value) {
 		this.camera = value;
 	}
 
