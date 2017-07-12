@@ -11,9 +11,9 @@ Basic setup is as follows
 <canvas id="myCanvas" width="500" height="500"></canvas>
 ```
 
-Check `demo.html` for a full demo.
+Check the `demo_name.html` files for full demos.
 
-* [Elemental](#elemental-engine)
+* [Elemental](#old-elemental-engine-v10-docs)
   * [Canvas](#elementalcanvas)
     * [keyDown](#elementalcanvaskeydown)
 	* [keyUp](#elementalcanvaskeyup)
