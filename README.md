@@ -2,6 +2,11 @@
 
 I am yet to write documentation for the new features added, since things are currently changing very fast. To give a general idea, I've posted the documentation from v1.0 below. Note that many things mentioned might have changed, and lots of new features are emitted. Read at your own risk!
 
+Run some of the demos here:
+[demo_physics.html](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/demo_physics.html)
+[demo_tankcubes.html](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/demo_tankcubes.html)
+[demo_tankshoot.html](https://rawgit.com/wg4568/Elemental-Engine-v2.0/master/demo_tankshoot.html)
+
 # Old Elemental Engine v1.0 Docs
 
 Basic setup is as follows
