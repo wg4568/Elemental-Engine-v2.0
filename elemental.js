@@ -11,6 +11,8 @@ Elemental.Physics.Rigidbody = class {
 		this.velocity = Elemental.Vector.Empty;
 		// this.acceleration = new Elemental.Vector(0, 2);
 
+		this.maxSpeed = null;
+
 		this.friction = 0.05;
 
 		this.zero_threshold = 0.001;
@@ -24,6 +26,12 @@ Elemental.Physics.Rigidbody = class {
 
 		this.posn = Elemental.Vector.Add(this.posn, this.velocity);
 
+		if (this.maxSpeed != null) {
+			if (this.velocity.x > this.maxSpeed) this.velocity.x = this.maxSpeed;
+			if (this.velocity.x < -this.maxSpeed) this.velocity.x = -this.maxSpeed;
+			if (this.velocity.y > this.maxSpeed) this.velocity.y = this.maxSpeed;
+			if (this.velocity.y < -this.maxSpeed) this.velocity.y = -this.maxSpeed;
+		}
 
 		if (this.velocity.x < this.zero_threshold && this.velocity.x > -this.zero_threshold) {
 			this.velocity.x = 0;
