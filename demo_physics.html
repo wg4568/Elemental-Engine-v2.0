@@ -39,7 +39,7 @@ canvas.start(function(){
 			canvas.mousePos,
 			viewport.translatePoint(myRigidbody.posn)
 		);
-		var force = Elemental.Vector.Multiply(step, amnt, speedMultiplier, -1)
+		var force = Elemental.Vector.Multiply(step, amnt, speedMultiplier)
 		myRigidbody.addForce(force);
 
 		canvas.drawLine(

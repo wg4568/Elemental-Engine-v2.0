@@ -1,0 +1,155 @@
+<script src="elemental.js"></script>
+<title>Tanks With Physics</title>
+
+<canvas id="game"></canvas>
+
+<script>
+
+// Define our canvas and viewport
+var canvas = new Elemental.Canvas("game", fullscreen=true);
+var viewport = new Elemental.Viewport(canvas);
+
+// Define a tank sprite, made of an arc and rectangular barrel
+var tankSprite = new Elemental.Sprite({
+	body: new Elemental.Shape.Arc(50, data={
+		lineWidth: 10,
+		fillColor: "#c80000",
+		layer: 1
+	}),
+	barrel: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(0, 50),
+		new Elemental.Vector(80, 50),
+		new Elemental.Vector(80, 0)
+	], data={
+		lineWidth: 10,
+		fillColor: "#1f9d00",
+		center: {
+			x: 0,
+			y: 25
+		}
+	})
+});
+
+// Define simple bullet sprite, with a single circular body
+var bulletSprite = new Elemental.Sprite({
+	bullet: new Elemental.Shape.Arc(15, data={
+		lineWidth: 10,
+		fillColor: "#56d6e0"
+	})
+})
+
+// Define a bullet class, to represent a shot bullet
+class Bullet {
+	constructor(posn, velocity) {
+		this.posn = posn;
+		this.velocity = velocity;
+	}
+
+	// Called every frame
+	frame() {
+		// Add velocity to current position
+		this.posn = Elemental.Vector.Add(this.posn, this.velocity);
+	}
+}
+
+// Define some variables to store game constants
+var moveSpeed = 0.5;
+var maxSpeed = 5;
+var bulletSpeed = 10;
+
+// Define empty array to store bullets
+var bullets = [];
+
+// Define a rigidbody for our tank's position and movement
+var tankRigid = new Elemental.Physics.Rigidbody();
+
+// Set the friction multiplier to 0.95
+tankRigid.friction = 0.95;
+
+// Call this function 60 times a second
+canvas.start(function(){
+	// Calculate angle to mouse from tank
+	mouseAngle = Elemental.Helpers.AngleBetween(canvas.mousePos, viewport.translatePoint(tankRigid.posn));
+
+	// Set the tank sprite's rotation to the computed angle
+	tankSprite.rotation = mouseAngle;
+
+	// Call the 'frame()' function for every bullet
+	bullets.forEach(function(bullet){
+		bullet.frame();
+	});
+
+	// If left mouse button has been clicked
+	if (canvas.mouseDown(Elemental.Mousecodes.LEFT)) {
+		// Calculate step to move to target position
+		var step = Elemental.Helpers.StepBetween(canvas.mousePos, viewport.translatePoint(tankRigid.posn));
+
+		// Multiply by bullet speed
+		step = Elemental.Vector.Multiply(step, bulletSpeed);
+
+		// Calculate offset, this is so the bullet spawns at the barrel, not inside the tank body
+		var offset = Elemental.Vector.Multiply(step, 10);
+
+		// Add offset to tank position and store in new vector
+		var start = Elemental.Vector.Add(tankRigid.posn, offset);
+
+		// Create a new bullet class with the above calculated parameters
+		var bullet = new Bullet(start, step);
+
+		// Add new bullet to bullets array
+		bullets.push(bullet);
+
+		// Give the tank a slight 'knockback' effect
+		tankRigid.addForce(Elemental.Vector.Multiply(step, -0.05));
+	}
+
+	// Get keyboard input and store it in a vector
+	var movement = Elemental.Vector.Empty;
+	if (canvas.keyHeld(Elemental.Keycodes.W)) movement.y -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.S)) movement.y += moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.A)) movement.x -= moveSpeed;
+	if (canvas.keyHeld(Elemental.Keycodes.D)) movement.x += moveSpeed;
+
+	// Check if tank velocity is within allowed range, if not, slow it down
+	if (tankRigid.xvelocity > maxSpeed) tankRigid.xvelocity = maxSpeed;
+	if (tankRigid.xvelocity < -maxSpeed) tankRigid.xvelocity = -maxSpeed;
+	if (tankRigid.yvelocity > maxSpeed) tankRigid.yvelocity = maxSpeed;
+	if (tankRigid.yvelocity < -maxSpeed) tankRigid.yvelocity = -maxSpeed;
+
+	// Add keyboard input movement to tank rigidbody
+	tankRigid.addForce(movement);
+
+	// Do rigidbody calculations
+	tankRigid.logic();
+
+	// Set camera position to be centered on the tank
+	// viewport.posn = tankRigid.posn;
+
+	// Fill the canvas with a grey background
+	viewport.drawFill("#e4e4e4");
+
+	// Draw line on X and Y axis
+	// viewport.drawLine(
+	// 	new Elemental.Vector(0, viewport.ymin),
+	// 	new Elemental.Vector(0, viewport.ymax),
+	// 	color="#a8a8a8",
+	// 	width=10
+	// );
+	// viewport.drawLine(
+	// 	new Elemental.Vector(viewport.xmin, 0),
+	// 	new Elemental.Vector(viewport.xmax, 0),
+	// 	color="#a8a8a8",
+	// 	width=10
+	// )
+
+	// Draw tank sprite at the position of the tank rigidbody
+	viewport.drawSprite(tankSprite, tankRigid.posn);
+
+	// Draw every bullet onto the canvas
+	bullets.forEach(function(bullet){
+		viewport.drawSprite(bulletSprite, bullet.posn);
+	});
+});
+
+</script>
