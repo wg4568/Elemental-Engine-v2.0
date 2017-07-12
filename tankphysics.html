@@ -12,7 +12,7 @@ var viewport = new Elemental.Viewport(canvas);
 // Define a tank sprite, made of an arc and rectangular barrel
 var tankSprite = new Elemental.Sprite({
 	body: new Elemental.Shape.Arc(50, data={
-		lineWidth: 10,
+		lineWidth: 6,
 		fillColor: "#c80000",
 		layer: 1
 	}),
@@ -22,7 +22,7 @@ var tankSprite = new Elemental.Sprite({
 		new Elemental.Vector(80, 50),
 		new Elemental.Vector(80, 0)
 	], data={
-		lineWidth: 10,
+		lineWidth: 6,
 		fillColor: "#1f9d00",
 		center: {
 			x: 0,
@@ -31,13 +31,72 @@ var tankSprite = new Elemental.Sprite({
 	})
 });
 
+var collectableSprite = new Elemental.Sprite({
+	body: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(35, 0),
+		new Elemental.Vector(35, 35),
+		new Elemental.Vector(0, 35)
+	], data={
+		lineWidth: 6,
+		fillColor: "#fff500",
+		center: {
+			x: 35/2,
+			y: 35/2
+		}
+	}),
+})
+
 // Define simple bullet sprite, with a single circular body
 var bulletSprite = new Elemental.Sprite({
-	bullet: new Elemental.Shape.Arc(10, data={
-		lineWidth: 10,
+	bullet: new Elemental.Shape.Arc(15, data={
+		lineWidth: 6,
 		fillColor: "#56d6e0"
 	})
 })
+
+class Collectable {
+	constructor(posn) {
+		this.rotation = Elemental.Helpers.RandomInt(-2, 2)*0.1;
+		this.angle = 0;
+		this.rigidbody = new Elemental.Physics.Rigidbody()
+		this.rigidbody.posn = posn;
+		this.rigidbody.friction = 1;
+
+		var force = new Elemental.Vector(
+			Elemental.Helpers.RandomInt(-2, 2)*0.1,
+			Elemental.Helpers.RandomInt(-2, 2)*0.1
+		)
+		this.rigidbody.addForce(force);
+
+		// this.rigidbody.addForce(new Elemental.Vector(0, 3));
+	}
+
+	frame() {
+		this.angle += this.rotation;
+
+		var parent = this;
+		bullets.forEach(function(bullet){
+			var dist = Elemental.Helpers.DistanceBetween(parent.rigidbody.posn, bullet.posn);
+			if (dist < 27) {
+				parent.rigidbody.addForce(
+					Elemental.Vector.Multiply(bullet.velocity, 0.01)
+				);
+				bullets.splice(bullets.indexOf(bullet), 1);
+			}
+		});
+
+		// collectables.forEach(function(coll){
+		// 	var dist = Elemental.Helpers.DistanceBetween(parent.rigidbody.posn, coll.rigidbody.posn);
+		// 	if (dist < 23 && dist != 0) {
+		// 		var combined = Elemental.Vector.Add(parent.rigidbody.velocity, coll.rigidbody.posn);
+		// 		parent.rigidbody.addForce(combined);
+		// 	}
+		// });
+
+		parent.rigidbody.logic();
+	}
+}
 
 // Define a bullet class, to represent a shot bullet
 class Bullet {
@@ -56,16 +115,59 @@ class Bullet {
 // Define some variables to store game constants
 var moveSpeed = 0.5;
 var maxSpeed = 5;
-var bulletSpeed = 15;
+var bulletSpeed = 10;
 
 // Define empty array to store bullets
 var bullets = [];
+var collectables = [];
+
+function addCollectable(point) {
+	var coll = new Collectable(point);
+	collectables.push(coll);
+}
 
 // Define a rigidbody for our tank's position and movement
 var tankRigid = new Elemental.Physics.Rigidbody();
 
 // Set the friction multiplier to 0.95
 tankRigid.friction = 0.95;
+
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
+addCollectable(new Elemental.Vector(
+	Elemental.Helpers.RandomInt(-500, 500),
+	Elemental.Helpers.RandomInt(-500, 500)
+));
 
 // Call this function 60 times a second
 canvas.start(function(){
@@ -80,6 +182,10 @@ canvas.start(function(){
 		bullet.frame();
 	});
 
+	collectables.forEach(function(coll){
+		coll.frame();
+	})
+
 	// If left mouse button has been clicked
 	if (canvas.mouseDown(Elemental.Mousecodes.LEFT)) {
 		// Calculate step to move to target position
@@ -89,7 +195,7 @@ canvas.start(function(){
 		step = Elemental.Vector.Multiply(step, bulletSpeed);
 
 		// Calculate offset, this is so the bullet spawns at the barrel, not inside the tank body
-		var offset = Elemental.Vector.Multiply(step, 7);
+		var offset = Elemental.Vector.Multiply(step, 10);
 
 		// Add offset to tank position and store in new vector
 		var start = Elemental.Vector.Add(tankRigid.posn, offset);
@@ -123,8 +229,28 @@ canvas.start(function(){
 	// Do rigidbody calculations
 	tankRigid.logic();
 
+	viewport.posn = tankRigid.posn;
+
 	// Fill the canvas with a grey background
 	viewport.drawFill("#e4e4e4");
+
+	viewport.drawLine(
+		new Elemental.Vector(0, viewport.ymin),
+		new Elemental.Vector(0, viewport.ymax),
+		color="#a8a8a8",
+		width=10
+	);
+	viewport.drawLine(
+		new Elemental.Vector(viewport.xmin, 0),
+		new Elemental.Vector(viewport.xmax, 0),
+		color="#a8a8a8",
+		width=10
+	)
+
+	collectables.forEach(function(coll){
+		collectableSprite.rotation = coll.angle;
+		viewport.drawSprite(collectableSprite, coll.rigidbody.posn);
+	});
 
 	// Draw tank sprite at the position of the tank rigidbody
 	viewport.drawSprite(tankSprite, tankRigid.posn);
