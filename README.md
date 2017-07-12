@@ -2,7 +2,7 @@
 
 I am yet to write documentation for the new features added, since things are currently changing very fast. To give a general idea, I've posted the documentation from v1.0 below. Note that many things mentioned might have changed, and lots of new features are emitted. Read at your own risk!
 
-# Elemental Engine
+# Old Elemental Engine v1.0 Docs
 
 Basic setup is as follows
 
