@@ -9,20 +9,27 @@ Elemental.Physics.Rigidbody = class {
 	constructor() {
 		this.posn = Elemental.Vector.Empty;
 		this.velocity = Elemental.Vector.Empty;
+		// this.acceleration = new Elemental.Vector(0, 2);
 
-		this.friction = 1;
+		this.friction = 0.05;
 
 		this.zero_threshold = 0.001;
 	}
 
 	logic() {
-		this.velocity = Elemental.Vector.Multiply(this.velocity, this.friction);
+		// this.velocity = Elemental.Vector.Add(this.velocity, this.acceleration);
 
-		if (this.xvelocity < this.zero_threshold && this.xvelocity > -this.zero_threshold) {
-			this.xvelocity = 0;
+		var currentFriction = Elemental.Vector.Multiply(this.velocity, this.friction, -1);
+		this.velocity = Elemental.Vector.Add(this.velocity, currentFriction);
+
+		this.posn = Elemental.Vector.Add(this.posn, this.velocity);
+
+
+		if (this.velocity.x < this.zero_threshold && this.velocity.x > -this.zero_threshold) {
+			this.velocity.x = 0;
 		}
-		if (this.yvelocity < this.zero_threshold && this.yvelocity > -this.zero_threshold) {
-			this.yvelocity = 0;
+		if (this.velocity.y < this.zero_threshold && this.velocity.y > -this.zero_threshold) {
+			this.velocity.y = 0;
 		}
 
 		this.posn = Elemental.Vector.Add(this.posn, this.velocity);
@@ -30,38 +37,6 @@ Elemental.Physics.Rigidbody = class {
 
 	addForce(force) {
 		this.velocity = Elemental.Vector.Add(this.velocity, force);
-	}
-
-	get x() {
-		return this.posn.x;
-	}
-
-	get y() {
-		return this.posn.y;
-	}
-
-	get xvelocity() {
-		return this.velocity.x;
-	}
-
-	get yvelocity() {
-		return this.velocity.y;
-	}
-
-	set x(val) {
-		this.posn.x = val;
-	}
-
-	set y(val) {
-		this.posn.y = val;
-	}
-
-	set xvelocity(val) {
-		this.velocity.x = val;
-	}
-
-	set yvelocity(val) {
-		this.velocity.y = val;
 	}
 }
 

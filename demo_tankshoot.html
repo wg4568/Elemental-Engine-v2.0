@@ -64,8 +64,8 @@ var bullets = [];
 // Define a rigidbody for our tank's position and movement
 var tankRigid = new Elemental.Physics.Rigidbody();
 
-// Set the friction multiplier to 0.95
-tankRigid.friction = 0.95;
+// Set the friction multiplier to 0.1
+tankRigid.friction = 0.1;
 
 // Call this function 60 times a second
 canvas.start(function(){
@@ -112,10 +112,10 @@ canvas.start(function(){
 	if (canvas.keyHeld(Elemental.Keycodes.D)) movement.x += moveSpeed;
 
 	// Check if tank velocity is within allowed range, if not, slow it down
-	if (tankRigid.xvelocity > maxSpeed) tankRigid.xvelocity = maxSpeed;
-	if (tankRigid.xvelocity < -maxSpeed) tankRigid.xvelocity = -maxSpeed;
-	if (tankRigid.yvelocity > maxSpeed) tankRigid.yvelocity = maxSpeed;
-	if (tankRigid.yvelocity < -maxSpeed) tankRigid.yvelocity = -maxSpeed;
+	if (tankRigid.velocity.x > maxSpeed) tankRigid.velocity.x = maxSpeed;
+	if (tankRigid.velocity.x < -maxSpeed) tankRigid.velocity.x = -maxSpeed;
+	if (tankRigid.velocity.y > maxSpeed) tankRigid.velocity.y = maxSpeed;
+	if (tankRigid.velocity.y < -maxSpeed) tankRigid.velocity.y = -maxSpeed;
 
 	// Add keyboard input movement to tank rigidbody
 	tankRigid.addForce(movement);
