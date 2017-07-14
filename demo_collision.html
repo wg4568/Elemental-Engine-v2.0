@@ -1,0 +1,105 @@
+<title>Collision Demo</title>
+
+<script src="elemental.js"></script>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+var canvas = new Elemental.Canvas("canvas", fullscreen=true);
+var viewport = new Elemental.Viewport(canvas);
+
+var shapeOne = new Elemental.Sprite({
+	body: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(0, 150),
+		new Elemental.Vector(100, 150),
+		new Elemental.Vector(100, 75)
+	], data={
+		lineWidth: 10,
+		fillColor: "#8988eb",
+		center: {
+			x: 50,
+			y: 75
+		}
+	})
+});
+
+var shapeTwo = new Elemental.Sprite({
+	body: new Elemental.Shape.Polygon([
+		new Elemental.Vector(0, 0),
+		new Elemental.Vector(75, 0),
+		new Elemental.Vector(75, 100),
+		new Elemental.Vector(0, 100),
+	], data={
+		lineWidth: 10,
+		fillColor: "#da9bd7",
+		center: {
+			x: 75/2,
+			y: 50
+		}
+	})
+})
+
+var shapeOneBody = new Elemental.Physics.Rigidbody();
+var shapeTwoBody = new Elemental.Physics.Rigidbody();
+
+shapeOneBody.posn = new Elemental.Vector(-200, 0);
+
+function findLines(shape) {
+	var lines = [];
+	for (var i = 0; i < shape.points.length; i ++) {
+		var pt = shape.points[i];
+		var nxt = shape.points[(i + 1) % shape.points.length];
+
+		// Something must be able to be simplified here but it's late and logic is hard
+		if (!(!shape.closePath && i + 1 == shape.points.length)) {
+			lines.push([pt, nxt]);
+		}
+	}
+	return lines;
+}
+
+function findCollisions(thingOne, thingOnePos, thingTwo, thingTwoPos) {
+	var thingOneLines = [];
+	var thingTwoLines = [];
+
+	for (var property in thingOne.shapes) {
+		if (thingOne.shapes.hasOwnProperty(property)) {
+			var shape = thingOne.shapes[property];
+			if (shape.type == "poly") {
+				thingOneLines = thingOneLines.concat(findLines(shape));
+			}
+		}
+	}
+
+	for (var property in thingTwo.shapes) {
+		if (thingTwo.shapes.hasOwnProperty(property)) {
+			var shape = thingTwo.shapes[property];
+			if (shape.type == "poly") {
+				thingTwoLines = thingTwoLines.concat(findLines(shape));
+			}
+		}
+	}
+}
+
+findLines(shapeOne.shapes.body);
+
+canvas.start(function(){
+	shapeOne.rotation ++;
+
+	shapeTwoBody.posn = viewport.translateCanvasPoint(canvas.mousePos);
+
+	console.log(findCollisions(
+		shapeOne, shapeOneBody.posn,
+		shapeTwo, shapeTwoBody.posn
+	));
+
+
+	viewport.drawFill("#b6ffcb");
+
+	viewport.drawSprite(shapeOne, shapeOneBody.posn)
+	viewport.drawSprite(shapeTwo, shapeTwoBody.posn)
+});
+
+</script>

@@ -406,6 +406,12 @@ Elemental.Viewport = class {
 		return newPoint;
 	}
 
+	translateCanvasPoint(point) {
+		var newPoint = Elemental.Vector.Add(point, this.position);
+		newPoint = Elemental.Vector.Subtract(newPoint, this.canvas.center);
+		return newPoint;
+	}
+
 	drawFill(color) {
 		this.canvas.drawFill(color);
 
